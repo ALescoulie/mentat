@@ -172,9 +172,9 @@ combineExprs exprs [] op = case op of -- If there are exprs left and no ops on t
     False -> Left $ BadExpr $ exprs -- if not return error
   Just op -> Right (exprs, [op]) -- if op add to stack and return
 combineExprs (exprL : exprR : rest) (op2 : rops) maybeOp = case maybeOp of -- if there are enought expression on the stack
-  Just op1 -> case popOp op1 $ op2 of
+  Just op1 -> case popOp op1 op2 of
     True -> combineExprs ((BinOpE (op2) exprL exprR) : rest) (rops) $ Just op1 -- If op1 has presidence over op2, combine the two expressions and put the new expression on the stack
-    False -> Right ((exprL : exprR : rest), (op1 : rops))
+    False -> Right ((exprL : exprR : rest), (op1 : op2 : rops))
   Nothing -> do combineExprs ((BinOpE (op2) exprL exprR) : rest) rops Nothing
 combineExprs _ _ _ = Left EmptyExpr
 
@@ -182,7 +182,7 @@ combineExprs _ _ _ = Left EmptyExpr
 popOp :: BinOp -> BinOp -> Bool
 popOp op1 op2
   | op2p > op1p = True
-  | op2p == op2p && opLeftAssoc op1 = True
+  | op1p == op2p && opLeftAssoc op1 = True
   | otherwise = False
   where
     op1p = opPresidence op1
@@ -209,9 +209,20 @@ main = do
   print ct1
 
   print "Shunting Yard"
-  let pt1 = parseTokTree $ lex "3 + 2 * 4"
+  let pt1 = parseTokTree $ lex "3 + 2"
   print pt1
   case pt1 of
     Right tokTrees -> print $ parseExpr tokTrees
     Left err -> print err
 
+  let pt2 = parseTokTree $ lex "3 + 2 * 4"
+  print pt2
+  case pt2 of
+    Right tokTrees -> print $ parseExpr tokTrees
+    Left err -> print err
+
+  let pt3 = parseTokTree $ lex "3 + 2 * (4 + 5)"
+  print pt3
+  case pt3 of
+    Right tokTrees -> print $ parseExpr tokTrees
+    Left err -> print err
