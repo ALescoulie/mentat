@@ -11,7 +11,7 @@ data Error
   | UnfinishedTokenStream
   | BadToken [Token]
   | BadExpr [Expr]
-  | BadOp  BinOp
+  | BadOp BinOp
   | EmptyExpr
 
 data Bracket = Curl | Sqr | Paren deriving (Show, Eq)
@@ -39,7 +39,6 @@ instance Show Error where
   show (BadToken tokens) = "You dumbass you put in a bad token.\ntokens: " ++ show tokens
   show (BadExpr expr) = "You dumbass you put a bad expression.\nexpr" ++ show expr
   show (BadOp op) = "You dumbass you put a bad operator.\noperator: " ++ show op
-  
 
 safesqrt :: Float -> Either Error Float
 safesqrt x = if x >= 0 then Right (sqrt x) else Left GotZero
@@ -113,21 +112,21 @@ parseInner (TClose x : xs) (y : ys)
   | x /= y = Left $ MismatchedBracket (y : ys) (TClose x : xs)
   | otherwise = Right (xs, [])
 parseInner (TClose x : xs) [] = Left $ UnclosedBracket [] (TClose x : xs)
-parseInner (TOpen x : xs) stack = do  -- don't need cases since errors are infective
-  (tokAfterInner, inner) <- parseInner xs (x : stack)  -- parse inner for bracket x
+parseInner (TOpen x : xs) stack = do
+  -- don't need cases since errors are infective
+  (tokAfterInner, inner) <- parseInner xs (x : stack) -- parse inner for bracket x
   (tokAfterRest, rest) <- parseInner tokAfterInner stack -- parse tokens after x
   pure (tokAfterRest, TNode x inner : rest) -- put tuple of results into Either
 parseInner (x : xs) stack = do
   (restTokens, rest) <- parseInner xs stack
   pure (restTokens, TLeaf x : rest)
 
-data Literal = BoolL Bool | RL Float deriving Show
+data Literal = BoolL Bool | RL Float deriving (Show)
 
-data Expr = LitE Literal | VarE String | BinOpE BinOp Expr Expr deriving Show
+data Expr = LitE Literal | VarE String | BinOpE BinOp Expr Expr deriving (Show)
 
-
---parseExpr :: [TokTree] -> Either Error Expr
---parseExpr tokTrees = shuntingYard tokTrees [] []
+-- parseExpr :: [TokTree] -> Either Error Expr
+-- parseExpr tokTrees = shuntingYard tokTrees [] []
 
 opPresidence :: BinOp -> Int
 opPresidence Add = 1
@@ -141,26 +140,43 @@ opLeftAssoc op
   | op == Eql = False
   | otherwise = True
 
--- shuntingYard :: [TokTree] -> [Expr] -> [BinOp] -> Either Error Expr
+parseExpr :: [TokTree] -> Either Error Expr
+parseExpr tokens = shuntingYard tokens [] []
 
+shuntingYard :: [TokTree] -> [Expr] -> [BinOp] -> Either Error Expr
+shuntingYard [] exprs ops = do
+  -- if there are no more tokens
+  (mergedExprs, mergedOps) <- combineExprs exprs ops Nothing -- merge the remaing exprs and ops
+  case length mergedExprs == 1 && length mergedOps == 0 of -- if there are extra exprs or ops throw error
+    True -> Right $ head mergedExprs -- if no extras return expr
+    False -> Left EmptyExpr -- if there are extras throw error
+shuntingYard (toT : restT) exprs ops = case toT of
+  TLeaf (TNumber n) -> shuntingYard restT (LitE (RL n) : exprs) ops
+  TLeaf (TId i) -> shuntingYard restT (VarE i : exprs) ops
+  TLeaf (TOp op) -> do
+    (mergedExprs, mergedOps) <- combineExprs exprs ops $ Just op
+    shuntingYard restT mergedExprs mergedOps
+  TNode node innerTok -> do
+    innerExpr <- shuntingYard innerTok [] []
+    shuntingYard restT (innerExpr : exprs) ops
+  _ -> Left EmptyExpr
 
 -- | Takes in an expresssion stack operator stack and a maybe BinOp of the last operator hit.
 -- | Returns the new Expression Stack and the new Operator Stack.
 combineExprs :: [Expr] -> [BinOp] -> Maybe BinOp -> Either Error ([Expr], [BinOp])
-combineExprs [] [] _ = Left EmptyExpr  -- if both stacks are empty, and there is an op
-combineExprs [] stack _ = Left $ BadOp $ head stack -- If there are not enough expressions on the stack
-combineExprs exprs [] op = case op of
-  Nothing -> case length exprs == 1 of
-    True -> Right (exprs, [])
-    False -> Left $ BadExpr $ exprs
-  Just op -> Right (exprs, [op])
-combineExprs (exprL : exprR : rest) opStack maybeOp = case maybeOp of  -- if there are enought expression on the stack
-  Just op1 -> case popOp op1 $ head opStack of
-    True -> combineExprs ((BinOpE (head opStack) exprL exprR) : rest) (tail opStack) $ Just op1  -- If op1 has presidence over op2, combine the two expressions and put the new expression on the stack
-    False -> Right ((exprL : exprR : rest), (op1 : opStack))
-  Nothing -> do combineExprs ((BinOpE (head opStack) exprL exprR) : rest) (tail opStack) Nothing
-    
-
+combineExprs [] [] _ = Left EmptyExpr -- if both stacks are empty, and there is an op
+combineExprs [] (op : rOps) _ = Left $ BadOp $ op -- If there are not enough expressions on the stack
+combineExprs exprs [] op = case op of -- If there are exprs left and no ops on the stack
+  Nothing -> case length exprs == 1 of -- If op is Nothing, means all tokens are parsed
+    True -> Right (exprs, []) -- if tokens are constructed into a single tree return it
+    False -> Left $ BadExpr $ exprs -- if not return error
+  Just op -> Right (exprs, [op]) -- if op add to stack and return
+combineExprs (exprL : exprR : rest) (op2 : rops) maybeOp = case maybeOp of -- if there are enought expression on the stack
+  Just op1 -> case popOp op1 $ op2 of
+    True -> combineExprs ((BinOpE (op2) exprL exprR) : rest) (rops) $ Just op1 -- If op1 has presidence over op2, combine the two expressions and put the new expression on the stack
+    False -> Right ((exprL : exprR : rest), (op1 : rops))
+  Nothing -> do combineExprs ((BinOpE (op2) exprL exprR) : rest) rops Nothing
+combineExprs _ _ _ = Left EmptyExpr
 
 -- | Takes an operator op1 and the operator from the top of the stack op2
 popOp :: BinOp -> BinOp -> Bool
@@ -173,6 +189,7 @@ popOp op1 op2
     op2p = opPresidence op2
 
 main = do
+  print "Parse into tokens"
   print $ lex "3y = 12x + 5"
   print $ lex "3y =(12x + 5"
   print $ lex "3y = a(12x + 5)"
@@ -188,5 +205,13 @@ main = do
   print $ parseTokTree $ lex "([{}])"
 
   print "Combine"
-  let ct1 = combineExprs [LitE (RL 1), LitE (RL 1)] [Mul] $ Just Add
+  let ct1 = combineExprs [LitE (RL 1), LitE (RL 1)] [Add] $ Just Mul
   print ct1
+
+  print "Shunting Yard"
+  let pt1 = parseTokTree $ lex "3 + 2 * 4"
+  print pt1
+  case pt1 of
+    Right tokTrees -> print $ parseExpr tokTrees
+    Left err -> print err
+
