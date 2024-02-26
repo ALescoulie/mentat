@@ -13,6 +13,17 @@ data Error
   | BadExpr [Expr]
   | BadOp BinOp
   | EmptyExpr
+  | LitBinOpError BinOp Literal Literal
+  
+instance Show Error where
+  show GotNegative = "you dumbass you put in a negative"
+  show GotZero = "you dumbass you put in a zero"
+  show (MismatchedBracket stack tokens) = "You dumbass you mismatched a bracket.\nstack: " ++ show stack ++ "\ntokens: " ++ show tokens
+  show (UnclosedBracket stack tokens) = "You dumbass you forgot a closing bracket.\nstack: " ++ show stack ++ "\ntokens: " ++ show tokens
+  show (BadToken tokens) = "You dumbass you put in a bad token.\ntokens: " ++ show tokens
+  show (BadExpr expr) = "You dumbass you put a bad expression.\nexpr" ++ show expr
+  show (BadOp op) = "You dumbass you put a bad operator.\noperator: " ++ show op
+  show (LitBinOpError op lExp rExp) = "You dumbass you mixed up reals and bools in: \nlExp " ++ show lExp ++ "\nop" ++ show op ++ " \nrExp" ++ show rExp
 
 data Bracket = Curl | Sqr | Paren deriving (Show, Eq)
 
@@ -31,14 +42,7 @@ data Token
   | TId String
   deriving (Show, Eq)
 
-instance Show Error where
-  show GotNegative = "you dumbass you put in a negative"
-  show GotZero = "you dumbass you put in a zero"
-  show (MismatchedBracket stack tokens) = "You dumbass you mismatched a bracket.\nstack: " ++ show stack ++ "\ntokens: " ++ show tokens
-  show (UnclosedBracket stack tokens) = "You dumbass you forgot a closing bracket.\nstack: " ++ show stack ++ "\ntokens: " ++ show tokens
-  show (BadToken tokens) = "You dumbass you put in a bad token.\ntokens: " ++ show tokens
-  show (BadExpr expr) = "You dumbass you put a bad expression.\nexpr" ++ show expr
-  show (BadOp op) = "You dumbass you put a bad operator.\noperator: " ++ show op
+
 
 safesqrt :: Float -> Either Error Float
 safesqrt x = if x >= 0 then Right (sqrt x) else Left GotZero
@@ -123,6 +127,29 @@ parseInner (x : xs) stack = do
 
 data Literal = BoolL Bool | RL Float deriving (Show)
 
+binOpAdd :: Literal -> Literal -> Either Error Literal
+binOpAdd (RL x) (RL y) = Right (RL (x + y))
+binOpAdd x y = Left $ LitBinOpError Add x y
+
+binOpSub :: Literal -> Literal -> Either Error Literal
+binOpSub x (RL y) = binOpAdd x (RL (-y))
+binOpSub x y = Left $ LitBinOpError Sub x y
+
+binOpMul :: Literal -> Literal -> Either Error Literal
+binOpMul (RL x) (RL y) = Right (RL (x * y))
+binOpMul x y = Left $ LitBinOpError Mul x y
+
+binOpDiv :: Literal -> Literal -> Either Error Literal
+binOpDiv (RL x) (RL y) = case y == 0 of
+  True -> Left $ LitBinOpError Div (RL x) (RL y)
+  False -> Right (RL (x / y))
+binOpDiv x y = Left $ LitBinOpError Div x y
+
+binOpEql :: Literal -> Literal -> Either Error Literal
+binOpEql (RL x) (RL y) = Right (BoolL (x == y))
+binOpEql (BoolL x) (BoolL y) = Right (BoolL (x == y))
+binOpEql x y = Left $ LitBinOpError Eql x y
+
 data Expr = LitE Literal | VarE String | BinOpE BinOp Expr Expr deriving (Show)
 
 -- parseExpr :: [TokTree] -> Either Error Expr
@@ -188,41 +215,36 @@ popOp op1 op2
     op1p = opPresidence op1
     op2p = opPresidence op2
 
-main = do
-  print "Parse into tokens"
-  print $ lex "3y = 12x + 5"
-  print $ lex "3y =(12x + 5"
-  print $ lex "3y = a(12x + 5)"
-  print $ lex "3y = a(b{c[12x + 5]})"
-  print $ lex "false 3y = true 12x + 5"
-  print $ lex "3y = 12x + 5true"
 
-  print "TokTree"
-  print $ parseTokTree $ lex "(x)"
-  print $ parseTokTree $ lex "(x + [x + {x + 1}])"
-  print $ parseTokTree $ lex "("
-  print $ parseTokTree $ lex ")"
-  print $ parseTokTree $ lex "([{}])"
+evalExpr :: Expr -> Either Error Literal
+evalExpr (LitE (RL n)) = Right (RL n)
+evalExpr (LitE (BoolL b)) = Right (BoolL b)
+evalExpr (VarE i) = Right (RL 0)  -- replace with var value later
+evalExpr (BinOpE op e1 e2) = do
+  l1 <- evalExpr e1
+  l2 <- evalExpr e2
+  case op of
+    Add -> do
+      result <- binOpAdd l1 l2
+      Right result
+    Sub -> do
+      result <- binOpSub l1 l2
+      Right result
+    Mul -> do
+      result <- binOpMul l1 l2
+      Right result
+    Div -> do
+      result <- binOpDiv l1 l2
+      Right result
+    Eql -> do
+      result <- binOpEql l1 l2
+      Right result
 
-  print "Combine"
-  let ct1 = combineExprs [LitE (RL 1), LitE (RL 1)] [Add] $ Just Mul
-  print ct1
+buildExpr :: String -> Either Error Expr
+buildExpr [] = Left EmptyExpr
+buildExpr str = do
+  let tokens = lex str
+  tokTree <- parseTokTree tokens
+  expr <- parseExpr tokTree
+  Right expr
 
-  print "Shunting Yard"
-  let pt1 = parseTokTree $ lex "3 + 2"
-  print pt1
-  case pt1 of
-    Right tokTrees -> print $ parseExpr tokTrees
-    Left err -> print err
-
-  let pt2 = parseTokTree $ lex "3 + 2 * 4"
-  print pt2
-  case pt2 of
-    Right tokTrees -> print $ parseExpr tokTrees
-    Left err -> print err
-
-  let pt3 = parseTokTree $ lex "3 + 2 * (4 + 5)"
-  print pt3
-  case pt3 of
-    Right tokTrees -> print $ parseExpr tokTrees
-    Left err -> print err
