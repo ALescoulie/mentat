@@ -73,8 +73,8 @@ data Token
   | TOp BinOp
   | TOpen Bracket
   | TClose Bracket
-  | TG
-  | TL
+  | TFalse
+  | TTrue
   | TId String
   | TAsgn
   deriving (Show, Eq)

@@ -1,7 +1,7 @@
 module Mentat.Lexer where
 
 import Prelude hiding (lex)
-import Mentat.ParseTypes
+import Mentat.ParseTypes ( Token( .. ), BinOp( .. ), Bracket( .. ) )
 
 lex :: String -> [Token]
 lex [] = []
@@ -24,6 +24,14 @@ lex ('<' : cs) = TOp L : lex cs
 lex ('>' : cs) = TOp G : lex cs
 lex ('!' : '=' : cs) = TOp NEq : lex cs
 lex (':' : '=' : cs) = TAsgn : lex cs
+lex ('f': 'a' : 'l' : 's' : 'e' : cs) = case cs of
+  [] -> [TFalse]
+  (' ' : rest) -> TFalse : lex rest
+  (cNext : rest) -> let (s, rs) = lexId ("false" ++ cNext : rest) in TId s : lex rs
+lex ('t': 'r' : 'u' : 'e' : cs) = case cs of
+  [] -> [TTrue]
+  (' ' : rest) -> TTrue : lex rest
+  (cNext : rest) -> let (s, rs) = lexId ("true" ++ cNext : rest) in TId s : lex rs
 lex (c : cs)
   | isDigit c = let (n, rs) = lexNumber cs in TNumber (read (c : n)) : lex rs
   | otherwise = let (s, rs) = lexId cs in TId (c : s) : lex rs
@@ -31,6 +39,8 @@ lex (c : cs)
 
 isDigit :: Char -> Bool
 isDigit c = c >= '0' && c <= '9'
+
+
 
 lexId :: String -> (String, String)
 lexId [] = ("", "")
@@ -58,6 +68,7 @@ lexNumber (c : cs)
       (TId _ : _) -> ([], '*': c : cs)
       _ -> ([], c:cs)
 
+-- | Matches first in second string
 matchSubStr :: String -> String -> (Bool, String)
 matchSubStr [] [] = (True, "")
 matchSubStr [] x = (True, x)
