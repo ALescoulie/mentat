@@ -8,12 +8,17 @@ import Test.Hspec
 
 spec :: Spec
 spec = do
-  describe "Lexing single char BinOps" $ do
+  describe "Lexing single Char Tokens" $ do
     describe "Parses single char BinOps" $ do
       let cases = zip "+-*/^=<>" [Add, Sub, Mul, Div, Exp, Eql, L, G]
       forM_ cases $ \(input, expected) ->
         it ("Parses " ++ show input) $ do lex [input] `shouldBe` [TOp expected]
-  describe "Parse multi char Tokens" $ do
+    describe "Parses Brackets" $ do
+      let brackets = [Curl, Sqr, Paren]
+      let cases = zip "{[(}])" $ map TOpen brackets ++ map TClose brackets 
+      forM_ cases $ \(input, expected) ->
+        it ("Parses " ++ show input) $ do lex [input] `shouldBe` [expected]
+  describe "Parse multi Char Tokens" $ do
     let cases =
           [ ("<=", TOp LEq)
           , (">=", TOp GEq)
@@ -32,3 +37,5 @@ spec = do
           ]
     forM_ cases $ \(input, expected) ->
       it ("Parses " ++ show input) $ do lex input `shouldBe` [expected]
+
+
