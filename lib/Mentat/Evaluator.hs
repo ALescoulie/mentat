@@ -1,7 +1,12 @@
-module Evaluator where
+module Mentat.Evaluator where
 
+import Prelude hiding ( lex )
 import qualified Data.Map.Strict as HM
-import ParseTypes
+
+import Mentat.ParseTypes
+import Mentat.Lexer ( lex )
+import Mentat.Tokenizer ( parseTokTree )
+import Mentat.SyntaxParser ( parseExpr )
 
 applyBinOp :: BinOp -> Literal -> Literal -> Either Error Literal
 applyBinOp Add (RL l) (RL r) = Right $ RL (l + r)

@@ -1,4 +1,4 @@
-module ParseTypes where
+module Mentat.ParseTypes where
 
 -- | Errors for parsing and evaluation process
 data Error

@@ -1,5 +1,5 @@
-module Tokenizer where
-import ParseTypes
+module Mentat.Tokenizer where
+import Mentat.ParseTypes
 
 tokSubTree :: TokTree -> [TokTree]
 tokSubTree (TNode _ ts) = ts

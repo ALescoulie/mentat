@@ -1,10 +1,10 @@
-
 module Mentat where
 
 import Prelude hiding (lex)
 
-import ParseTypes
-import Lexer
-import SyntaxParser
-import Evaluator
+import Mentat.ParseTypes
+import Mentat.Lexer
+import Mentat.Tokenizer
+import Mentat.SyntaxParser
+import Mentat.Evaluator
 

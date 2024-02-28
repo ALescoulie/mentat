@@ -1,10 +1,13 @@
 {-# LANGUAGE LambdaCase #-}
 
-module SyntaxParser where
+module Mentat.SyntaxParser where
 
-import ParseTypes
-
-import qualified Data.Map.Strict
+import Prelude hiding ( lex )
+import Mentat.ParseTypes
+import Mentat.Lexer ( lex )
+import Mentat.Tokenizer ( parseTokTree )
+import qualified Data.Map.Strict as HM
+import Data.Maybe ( mapMaybe )
 
 parseExpr :: [TokTree] -> Either Error Expr
 parseExpr tokens = shuntingYard tokens [] []

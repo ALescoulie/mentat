@@ -1,7 +1,7 @@
-module Lexer where
+module Mentat.Lexer where
 
 import Prelude hiding (lex)
-import ParseTypes
+import Mentat.ParseTypes
 
 lex :: String -> [Token]
 lex [] = []
