@@ -37,5 +37,8 @@ spec = do
           ]
     forM_ cases $ \(input, expected) ->
       it ("Parses " ++ show input) $ do lex input `shouldBe` [expected]
-
+  describe "Test number varriable adjancy multiplication" $ do
+    let mulStr = "2x"
+    let mulToks = [TNumber 2.0, TOp Mul, TId "x"]
+    it ("Parse " ++ show mulStr) $ do lex mulStr `shouldBe` mulToks
 
