@@ -15,7 +15,7 @@ spec = do
         it ("Parses " ++ show input) $ do lex [input] `shouldBe` [TOp expected]
     describe "Parses Brackets" $ do
       let brackets = [Curl, Sqr, Paren]
-      let cases = zip "{[(}])" $ map TOpen brackets ++ map TClose brackets 
+      let cases = zip "{[(}])" $ map TOpen brackets ++ map TClose brackets
       forM_ cases $ \(input, expected) ->
         it ("Parses " ++ show input) $ do lex [input] `shouldBe` [expected]
   describe "Parse multi Char Tokens" $ do
@@ -41,4 +41,3 @@ spec = do
     let mulStr = "2x"
     let mulToks = [TNumber 2.0, TOp Mul, TId "x"]
     it ("Parse " ++ show mulStr) $ do lex mulStr `shouldBe` mulToks
-
