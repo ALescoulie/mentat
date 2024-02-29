@@ -56,6 +56,7 @@ lexId (c : cs) = do
       let (s, rs) = lexId cs
       (c:s, rs)
 
+-- | Takes in a string reperesnting a the statment and the rest of the string
 lexNumber :: String -> (String, String)
 lexNumber [] = ("", "")
 lexNumber (c : cs)
@@ -67,6 +68,7 @@ lexNumber (c : cs)
     case tok of
       (TId _ : _) -> ([], '*': c : cs)
       _ -> ([], c:cs)
+
 
 -- | Matches first in second string
 matchSubStr :: String -> String -> (Bool, String)
