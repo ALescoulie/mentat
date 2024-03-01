@@ -44,15 +44,27 @@ isDigit c = c >= '0' && c <= '9'
 
 lexId :: String -> (String, String)
 lexId [] = ("", "")
-lexId (':' : cs) = ("", cs)
-lexId ('.' : cs) = ("", cs)
+lexId (':' : cs) = ("", ':' : cs)
+lexId ('.' : cs) = ("", '.' : cs)
+lexId (' ' : cs) = ("", ' ' : cs)
+lexId ('+' : cs) = ("", '+' : cs)
+lexId ('-' : cs) = ("", '-' : cs)
+lexId ('*' : cs) = ("", '*' : cs)
+lexId ('/' : cs) = ("", '/' : cs)
+lexId ('^' : cs) = ("", '^' : cs)
+lexId ('(' : cs) = ("", '(' : cs)
+lexId (')' : cs) = ("", ')' : cs)
+lexId ('[' : cs) = ("", '[' : cs)
+lexId (']' : cs) = ("", ']' : cs)
+lexId ('{' : cs) = ("", '{' : cs)
+lexId ('}' : cs) = ("", '}' : cs)
+lexId ('=' : cs) = ("", '=' : cs)
+lexId ('<' : '=' : cs) = ("", "<=" ++ cs)
+lexId ('>' : '=' : cs) = ("", ">=" ++ cs)
+lexId ('<' : cs) = ("", '<' : cs)
+lexId ('>' : cs) = ("", '>' : cs)
+lexId ('!' : '=' : cs) = ("", "!=" ++ cs)
 lexId (c : cs) = do
-  let cTok = lex [c]
-  case cTok of
-    [] -> (c : cs, [])
-    (TOp _ : _) -> (c : cs, [])
-    (TClose _ : _) -> (c : cs, [])
-    _ -> do
       let (s, rs) = lexId cs
       (c:s, rs)
 
