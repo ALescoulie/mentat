@@ -28,5 +28,42 @@ spec = do
         let tokTreeResult = parseTokTree input
         case tokTreeResult of
           Right tokTrees -> tokTrees `shouldBe` expected
-          Left _ -> 0 `shouldBe` 1
+          Left err -> error $ "unexpected error " ++ show err
+  describe "Parsing Token list with" $ do
+    let inputs = 
+          map lex
+            [ "o + (w + o)"
+            , "n + {y + [a + (a)]}"
+            ] 
+
+    let results = 
+          [ [ TLeaf $ TId "o"
+            , TLeaf $ TOp Add
+            , TNode Paren
+              [ TLeaf $ TId "w"
+              , TLeaf $ TOp Add
+              , TLeaf $ TId "o"
+              ]
+            ],
+            [ TLeaf $ TId "n"
+            , TLeaf $ TOp Add
+            , TNode Curl
+              [ TLeaf $ TId "y"
+              , TLeaf $ TOp Add
+              , TNode Sqr
+                [ TLeaf $ TId "a"
+                , TLeaf $ TOp Add
+                , TNode Paren [TLeaf $ TId "a"]
+                ]
+              ]
+            ]
+          ]
+
+    let cases = zip inputs results
+    forM_ cases $ \(input, expected) -> 
+      it ("Parses" ++ concatTokenList input) $ do
+        let tokTreeResult = parseTokTree input
+        case tokTreeResult of
+          Right tokTrees -> tokTrees `shouldBe` expected
+          Left err -> error $ "unexpected error " ++ show err
 
