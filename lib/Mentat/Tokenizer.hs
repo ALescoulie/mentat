@@ -7,7 +7,7 @@ tokSubTree (TNode _ ts) = ts
 parseTokTree :: [Token] -> Either Error [TokTree]
 parseTokTree tokens = case parseInner tokens [] of
   Right ([], t) -> Right t
-  Right (left, _) -> Left UnfinishedTokenStream
+  Right (_, _) -> Left UnfinishedTokenStream
   Left err -> Left err
 
 -- | Takes in a token stream, and a stack of brackets encountered so far.
