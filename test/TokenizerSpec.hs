@@ -29,7 +29,7 @@ spec = do
         case tokTreeResult of
           Right tokTrees -> tokTrees `shouldBe` expected
           Left err -> error $ "unexpected error " ++ show err
-  describe "Parsing Token list with" $ do
+  describe "Parsing Token list with with parens into sub trees" $ do
     let inputs = 
           map lex
             [ "o + (w + o)"
