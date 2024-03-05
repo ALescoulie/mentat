@@ -111,6 +111,7 @@ test-suite spec
     build-depends:
         base ^>=4.17.2.1,
         Mentat,
-        hspec==2.*
+        hspec==2.*,
+        containers
     build-tool-depends: hspec-discover:hspec-discover == 2.*
 
