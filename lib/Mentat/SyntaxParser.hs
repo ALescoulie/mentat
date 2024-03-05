@@ -70,6 +70,12 @@ parseDecl other = Left $ BadDecl other
 getProgramStatments :: Program -> [Statment]
 getProgramStatments (Program s) = s
 
+-- | returns the statments that are expressions
+filterExprs :: [Statment] -> [Expr]
+filterExprs [] = []
+filterExprs (Constraint expr: rest) = expr : filterExprs rest
+filterExprs (Declaration _ _: rest) = filterExprs rest
+
 
 -- | parses a list of strings into a program
 parseProgram :: [String] -> Either Error Program
