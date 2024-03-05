@@ -73,15 +73,17 @@ data Token
   | TOp BinOp
   | TOpen Bracket
   | TClose Bracket
+  | TSep
   | TFalse
   | TTrue
   | TId String
   | TAsgn
   deriving (Show, Eq)
 
+data Function = Function String [String] Expr deriving (Show, Eq)
 
 -- | Used as an intermediate step in the parsing process to validate parens and sort them into sub trees
-data TokTree = TLeaf Token | TNode Bracket [TokTree] deriving (Show, Eq)
+data TokTree = TLeaf Token | TNode Bracket [TokTree] | TFxn Function deriving (Show, Eq)
 
 
 -- | Literal values of float or boolean
@@ -89,13 +91,18 @@ data Literal = BoolL Bool | RL Float deriving (Show, Eq)
 
 
 -- | Mentat expressions which evaluate to a liberal. Literals and varriables are leaves and BinOps are nodes
-data Expr = LitE Literal | VarE String | BinOpE BinOp Expr Expr deriving (Show, Eq)
+data Expr
+  = LitE Literal
+  | VarE String
+  | BinOpE BinOp Expr Expr
+  | FxnE Function
+  deriving (Show, Eq)
 
 
 -- | A statement repersents a single line of mentat code which is either a constraint or a decleration
 -- | A constraint is an expression that evaluates to a boolean
 -- | An assingment assocates a varriable to an ID
-data Statment = Declaration String Expr | Constraint Expr deriving (Show, Eq)
+data Statment = Declaration String Expr | Constraint Expr | Fxn Function deriving (Show, Eq)
 
 
 -- | A program is a list of statments

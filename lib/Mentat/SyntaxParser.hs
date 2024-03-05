@@ -66,6 +66,23 @@ parseDecl (TLeaf (TId i) : TLeaf TAsgn : rest) = do
 parseDecl other = Left $ BadDecl other
 
 
+-- | Parse Function
+parseFxn :: [TokTree] -> Either Error Statment
+parseFxn [] = Left EmptyExpr
+parseFxn (TLeaf (TId name) : TNode Paren args : TLeaf TAsgn : rest) = do
+  fxnArgs <- parseFxnArgs args
+  fxnExpr <- parseExpr rest
+  Right $ Fxn $ Function name fxnArgs fxnExpr
+parseFxn tokTrees = Left EmptyExpr
+
+
+parseFxnArgs :: [TokTree] -> Either Error [String]
+parseFxnArgs [] = Right []
+parseFxnArgs (TLeaf (TId arg) : TLeaf TSep : restToks) = do
+  restArgs <- parseFxnArgs restToks
+  Right $ arg : restArgs
+parseFxnArgs (TLeaf (TId arg) : rest) = if null rest then Right [arg] else Left EmptyExpr -- TODO add error for bad function args
+
 -- | return the statments of a program
 getProgramStatments :: Program -> [Statment]
 getProgramStatments (Program s) = s
@@ -88,8 +105,12 @@ parseProgram (s : ss) = do
   let restStatments = getProgramStatments rest
   case maybeDecl of
     Left _ -> do
-      expr <- parseExpr tokTree
-      Right $ Program (Constraint expr : restStatments)
+      let maybeFunction = parseFxn tokTree
+      case maybeFunction of
+        Left _ -> do
+          expr <- parseExpr tokTree
+          Right $ Program (Constraint expr : restStatments)
+        Right fxn -> Right $ Program (fxn : restStatments)
     Right decl -> Right $ Program (decl : restStatments)
 
 

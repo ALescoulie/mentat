@@ -17,6 +17,7 @@ lex ('[' : cs) = TOpen Sqr : lex cs
 lex (']' : cs) = TClose Sqr : lex cs
 lex ('{' : cs) = TOpen Curl : lex cs
 lex ('}' : cs) = TClose Curl : lex cs
+lex (',' : cs) = TSep : lex cs
 lex ('=' : cs) = TOp Eql : lex cs
 lex ('<' : '=' : cs) = TOp LEq : lex cs
 lex ('>' : '=' : cs) = TOp GEq : lex cs
@@ -46,6 +47,7 @@ lexId :: String -> (String, String)
 lexId [] = ("", "")
 lexId (':' : cs) = ("", ':' : cs)
 lexId ('.' : cs) = ("", '.' : cs)
+lexId (',' : cs) = ("", ',' : cs)
 lexId (' ' : cs) = ("", ' ' : cs)
 lexId ('+' : cs) = ("", '+' : cs)
 lexId ('-' : cs) = ("", '-' : cs)
