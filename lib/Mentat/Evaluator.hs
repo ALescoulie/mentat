@@ -28,8 +28,8 @@ applyBinOp op x y = Left $ LitBinOpError op x y
 
 
 evalExpr :: Expr -> HM.Map String Expr -> Either Error Literal
-evalExpr (LitE (RL n)) vars = Right (RL n)
-evalExpr (LitE (BoolL b)) vars = Right (BoolL b)
+evalExpr (LitE (RL n)) _ = Right (RL n)
+evalExpr (LitE (BoolL b)) _ = Right (BoolL b)
 evalExpr (VarE i) vars = do
   let val = HM.lookup i vars
   case val of
@@ -42,12 +42,4 @@ evalExpr (BinOpE op e1 e2) vars = do
   l2 <- evalExpr e2 vars
   result <- applyBinOp op l1 l2
   Right result
-
-buildExpr :: String -> Either Error Expr
-buildExpr [] = Left EmptyExpr
-buildExpr str = do
-  let tokens = lex str
-  tokTree <- parseTokTree tokens
-  expr <- parseExpr tokTree
-  Right expr
 

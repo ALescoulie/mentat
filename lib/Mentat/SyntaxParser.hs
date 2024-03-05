@@ -9,9 +9,11 @@ import Mentat.Tokenizer ( parseTokTree )
 import qualified Data.Map.Strict as HM
 import Data.Maybe ( mapMaybe )
 
+-- | Parses TokTree list into expression
 parseExpr :: [TokTree] -> Either Error Expr
 parseExpr tokens = shuntingYard tokens [] []
 
+-- | helper for parseExpr
 shuntingYard :: [TokTree] -> [Expr] -> [BinOp] -> Either Error Expr
 shuntingYard [] exprs ops = do
   -- if there are no more tokens
@@ -30,9 +32,13 @@ shuntingYard (toT : restT) exprs ops = case toT of
     shuntingYard restT (innerExpr : exprs) ops
   _ -> Left EmptyExpr
 
+
+-- | Helper for shuntingYard
 buildOpExpr :: BinOp -> Expr -> Expr -> Expr
 buildOpExpr op e1 e2 = if opLeftAssoc op then BinOpE op e1 e2 else BinOpE op e2 e1
 
+
+-- | Helper for shuntingYard
 -- | Takes in an expresssion stack operator stack and a maybe BinOp of the last operator hit.
 -- | Returns the new Expression Stack and the new Operator Stack.
 combineExprs :: [Expr] -> [BinOp] -> Maybe BinOp -> Either Error ([Expr], [BinOp])
@@ -51,6 +57,7 @@ combineExprs (exprL : exprR : rest) (op2 : rops) maybeOp = case maybeOp of -- if
 combineExprs _ _ _ = Left EmptyExpr
 
 
+-- | Parses declerations from TokTree lists
 parseDecl :: [TokTree] -> Either Error Statment
 parseDecl [] = Left EmptyExpr
 parseDecl (TLeaf (TId i) : TLeaf TAsgn : rest) = do
@@ -58,29 +65,30 @@ parseDecl (TLeaf (TId i) : TLeaf TAsgn : rest) = do
   Right $ Declaration i expr
 parseDecl other = Left $ BadDecl other
 
-parseAsgn _ = Left EmptyExpr
 
-
-
+-- | return the statments of a program
 getProgramStatments :: Program -> [Statment]
 getProgramStatments (Program s) = s
 
+
+-- | parses a list of strings into a program
 parseProgram :: [String] -> Either Error Program
 parseProgram [] = Right (Program [])
 parseProgram (s : ss) = do
   let tokens = lex s
   tokTree <- parseTokTree tokens
-  let decl = parseDecl tokTree
+  let maybeDecl = parseDecl tokTree
   rest <- parseProgram ss
   let restStatments = getProgramStatments rest
-  case decl of
+  case maybeDecl of
     Left _ -> do
       expr <- parseExpr tokTree
       Right $ Program (Constraint expr : restStatments)
-    Right decl -> do
-      rest <- parseProgram ss
-      Right $ Program (decl : restStatments)
+    Right decl -> Right $ Program (decl : restStatments)
 
+
+-- | accpets a lilst and returns any repeated items
+-- | a helper for varriable parsing
 repeatItems :: Eq a => [a] -> [a]
 repeatItems [] = []
 repeatItems (x : xs) = filter (== x) xs ++ repeatItems xs
@@ -96,7 +104,13 @@ parseVariables (Program smtList) = do
           )
           smtList
   let vars = map fst decl
-  let expr = map snd decl
   let repeats = repeatItems vars
   if null repeats then Right (HM.fromList decl) else Left $ DuplicateVars repeats
 
+buildExpr :: String -> Either Error Expr
+buildExpr [] = Left EmptyExpr
+buildExpr str = do
+  let tokens = lex str
+  tokTree <- parseTokTree tokens
+  expr <- parseExpr tokTree
+  Right expr
