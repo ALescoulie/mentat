@@ -30,9 +30,12 @@ shuntingYard (toT : restT) exprs ops = case toT of
   TLeaf (TOp op) -> do
     (mergedExprs, mergedOps) <- combineExprs exprs ops $ Just op
     shuntingYard restT mergedExprs mergedOps
-  TNode node innerTok -> do
+  TNode _ innerTok -> do
     innerExpr <- shuntingYard innerTok [] []
     shuntingYard restT (innerExpr : exprs) ops
+  TFxn name args -> do -- if you encounter a fxn
+    argExprs <- mapM (\x -> shuntingYard x [] []) args
+    shuntingYard restT (FxnE name argExprs : exprs) ops
   _ -> Left EmptyExpr
 
 

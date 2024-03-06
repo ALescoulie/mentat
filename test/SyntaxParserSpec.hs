@@ -5,18 +5,19 @@ import Mentat.ParseTypes
 import Mentat.SyntaxParser
 import Prelude hiding (lex)
 import Test.Hspec
+import Mentat.ParseTypes (Statment(Constraint))
 
 spec :: Spec
 spec = do
   describe "Testing whole program parsing" $ do
-    let pg1 = ["x := 1", "y := 2", "f(n) := 2 * n", "2 = x * y"]
+    let pg1 = ["x := 1", "y := 2", "f(n) := 2 * n", "2 = x * y", "f(2x)"]
     let out1 =
           Program
             [ Declaration "x" (LitE $ RL 1)
             , Declaration "y" (LitE $ RL 2)
             , Fxn $ Function "f" ["n"] (BinOpE Mul (VarE "n") (LitE $ RL 2))
-            , Constraint
-                (BinOpE Eql (BinOpE Mul (VarE "y") (VarE "x")) (LitE $ RL 2))
+            , Constraint (BinOpE Eql (BinOpE Mul (VarE "y") (VarE "x")) (LitE $ RL 2))
+            , Constraint $ FxnE "f" [(BinOpE Mul (VarE "x") (LitE $ RL 2))]
             ]
 
     let maybePg1 = parseProgram pg1
