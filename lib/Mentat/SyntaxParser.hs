@@ -94,13 +94,13 @@ getProgramStatments (Program s) = s
 filterExprs :: [Statment] -> [Expr]
 filterExprs [] = []
 filterExprs (Constraint expr: rest) = expr : filterExprs rest
-filterExprs (Declaration _ _: rest) = filterExprs rest
+filterExprs ( _ : rest) = filterExprs rest
 
 
 getVarNames :: [Statment] -> [String]
-getVarnames [] = []
+getVarNames [] = []
 getVarNames (Declaration name _ : rest) = name : getVarNames rest
-getVarNames (x : xs) = getVarNames xs
+getVarNames ( _ : xs) = getVarNames xs
 
 
 getFxnNames :: [Statment] -> [String]
@@ -109,13 +109,14 @@ getFxnNames (Fxn (Function name _ _) : rest) = name : getFxnNames rest
 getFxnNames (_ : xs) = getFxnNames xs
 
 -- | parses a list of strings into a program
-parseProgram :: [String] -> Either Error Program
-parseProgram [] = Right (Program [])
-parseProgram (s : ss) = do
+-- | is a helper for parse program
+parseProgram' :: [String] -> Either Error Program
+parseProgram' [] = Right (Program [])
+parseProgram' (s : ss) = do
   let tokens = lex s
   tokTree <- parseTokTree tokens
   let maybeDecl = parseDecl tokTree
-  rest <- parseProgram ss
+  rest <- parseProgram' ss
   let restStatments = getProgramStatments rest
   case maybeDecl of
     Left _ -> do
@@ -126,6 +127,18 @@ parseProgram (s : ss) = do
          Right $ Program (Constraint expr : restStatments)
        Right fxn -> Right $ Program (fxn : restStatments)
     Right decl -> Right $ Program (decl : restStatments)
+
+
+-- | Parses and validates a list of strings into a program
+parseProgram :: [String] -> Either Error Program
+parseProgram [] = Right (Program [])
+parseProgram pg = do
+  programStats <- parseProgram' pg
+  let declNames = getVarNames $ getProgramStatments programStats
+  let fxnNames = getFxnNames $ getProgramStatments programStats
+  let repeatNames = repeatItems $ declNames ++ fxnNames
+
+  if null repeatNames then Right programStats else Left $ DuplicateVars repeatNames
 
 
 -- | accpets a lilst and returns any repeated items

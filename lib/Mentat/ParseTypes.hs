@@ -30,6 +30,7 @@ instance Show Error where
   show (BadDecl stream) = "failed to parse decl " ++ show stream
   show (MissingVar var) = "You dumbass you forgot to assign variable.\nvar" ++ show var
   show EmptyExpr = "You dumbass you didn't fill out an expression"
+  show (DuplicateVars vars) = "You dumbass you repeated a variable: " ++ show vars
   show _ = "You dumbass you caused an error"
 
 -- | Brackets avaliable in code

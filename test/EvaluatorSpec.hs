@@ -1,20 +1,20 @@
 module EvaluatorSpec where
 
-import Prelude hiding ( lex )
+import Control.Monad (forM_)
+import qualified Data.Map.Strict as HM
+import Mentat.Evaluator
 import Mentat.Lexer
 import Mentat.ParseTypes
 import Mentat.SyntaxParser
-import Mentat.Evaluator
-import qualified Data.Map.Strict as HM
-import Control.Monad ( forM_ )
+import Mentat.Tokenizer (parseTokTree)
+import Prelude hiding (lex)
+import Data.Foldable ( toList )
 import Test.Hspec
-import Mentat.Tokenizer ( parseTokTree )
 
 spec :: Spec
-
 spec = do
   describe "Testing Expression Evaluation without varriables" $ do
-    let cases = 
+    let cases =
           [ ("1 + 1", RL 2)
           , ("2 + 2 * 3", RL 8)
           , ("(2 + 2) * 3", RL 12)
@@ -28,9 +28,8 @@ spec = do
         case evalInput of
           Right result -> result `shouldBe` expected
           Left err -> error $ "unexpected error " ++ show err
-
   describe "Testing Program Evaluation with varriables" $ do
-    let pg1Input = 
+    let pg1Input =
           [ "a := 3"
           , "b := 2"
           , "a + b"
@@ -49,5 +48,5 @@ spec = do
         forM_ cases $ \(input, expected) -> do
           it ("Evaluates: " ++ show input) $ do
             let result = pgVars >>= \x -> evalExpr input x
-            expected `elem` result `shouldBe` True
+            toList result `shouldBe` [expected]
       Left err -> error $ "unexpected error " ++ show err
