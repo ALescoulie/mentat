@@ -161,6 +161,22 @@ parseVariables (Program smtList) = do
   let repeats = repeatItems vars
   if null repeats then Right (HM.fromList decl) else Left $ DuplicateVars repeats
 
+
+parseFxns :: Program -> Either Error (HM.Map String Function)
+parseFxns (Program []) = Right HM.empty
+parseFxns (Program smtList) = do
+  let fxnNames = getFxnNames smtList
+  let fxns = 
+        mapMaybe
+          ( \case
+              Fxn f -> Just f
+              _ -> Nothing
+          )
+          smtList
+  let fxnList = zip fxnNames fxns
+  Right (HM.fromList fxnList)
+
+
 buildExpr :: String -> Either Error Expr
 buildExpr [] = Left EmptyExpr
 buildExpr str = do
