@@ -83,7 +83,7 @@ data Token
 data Function = Function String [String] Expr deriving (Show, Eq)
 
 -- | Used as an intermediate step in the parsing process to validate parens and sort them into sub trees
-data TokTree = TLeaf Token | TNode Bracket [TokTree] | TFxn Function deriving (Show, Eq)
+data TokTree = TLeaf Token | TNode Bracket [TokTree] | TFxn String [[TokTree]] deriving (Show, Eq)
 
 
 -- | Literal values of float or boolean
@@ -95,7 +95,7 @@ data Expr
   = LitE Literal
   | VarE String
   | BinOpE BinOp Expr Expr
-  | FxnE Function
+  | FxnE String [Expr]
   deriving (Show, Eq)
 
 

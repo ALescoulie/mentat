@@ -1,5 +1,6 @@
 module Mentat.Tokenizer where
 import Mentat.ParseTypes
+import Data.List.Split ( splitOn )
 
 tokSubTree :: TokTree -> [TokTree]
 tokSubTree (TNode _ ts) = ts
@@ -20,6 +21,15 @@ parseInner (TClose x : xs) (y : ys)
   | x /= y = Left $ MismatchedBracket (y : ys) (TClose x : xs)
   | otherwise = Right (xs, [])
 parseInner (TClose x : xs) [] = Left $ UnclosedBracket [] (TClose x : xs)
+parseInner (TId name : TOpen Paren : cRest) stack = do
+  let maybeFxn = parseFxnCall (TId name : TOpen Paren : cRest)
+  case maybeFxn of
+    Right (restAfterFxn, fxnCall) -> do
+      (restToks, rest) <- parseInner restAfterFxn stack
+      pure (restToks, fxnCall : rest)
+    Left _ -> do    
+      (restTokens, rest) <- parseInner (TOpen Paren : cRest) stack
+      pure (restTokens, TLeaf (TId name) : rest)
 parseInner (TOpen x : xs) stack = do
   -- don't need cases since errors are infective
   (tokAfterInner, inner) <- parseInner xs (x : stack) -- parse inner for bracket x
@@ -28,4 +38,12 @@ parseInner (TOpen x : xs) stack = do
 parseInner (x : xs) stack = do
   (restTokens, rest) <- parseInner xs stack
   pure (restTokens, TLeaf x : rest)
+
+parseFxnCall :: [Token] -> Either Error ([Token], TokTree)
+parseFxnCall (TId name : TOpen Paren : TClose Paren : rest) = Right (rest, TFxn name [[]])
+parseFxnCall (TId name : TOpen Paren :  call) = do
+  (rest, argToks) <- parseInner call [Paren]
+  let args = splitOn [TLeaf TSep] argToks
+  Right (rest, TFxn name args) 
+parseFxnCall _ = Left UnfinishedTokenStream -- add an error
 

@@ -6,7 +6,6 @@ import Mentat.ParseTypes
 import Mentat.Tokenizer
 import Prelude hiding (lex)
 import Test.Hspec
-import Data.Foldable (concat)
 
 concatTokenList :: [Token] -> String
 concatTokenList [] = ""
@@ -63,6 +62,21 @@ spec = do
     forM_ cases $ \(input, expected) -> 
       it ("Parses" ++ concatTokenList input) $ do
         let tokTreeResult = parseTokTree input
+        case tokTreeResult of
+          Right tokTrees -> tokTrees `shouldBe` expected
+          Left err -> error $ "unexpected error " ++ show err
+  describe "Parsing function calls into TokTrees" $ do
+    let cases = 
+          [ ("f()", [TFxn "f" [[]]])
+          , ("f(1, 2)", [TFxn "f" [[TLeaf $ TNumber 1], [TLeaf $ TNumber 2]]])
+          , ("f(n - 1)", [TFxn "f" [[TLeaf $ TId "n", TLeaf $ TOp Sub, TLeaf $ TNumber 1]]])
+          , ("f(f(n + 1))", [TFxn "f" [[TFxn "f" [[TLeaf $ TId "n", TLeaf $ TOp Add, TLeaf $ TNumber 1]]]]])
+          , ("f(2 * (n - 1))",[TFxn "f" [[ TLeaf $ TNumber 2, TLeaf $ TOp Mul, TNode Paren [TLeaf $ TId "n", TLeaf $ TOp Sub, TLeaf $ TNumber 1]]]])
+          ]
+
+    forM_ cases $ \(input, expected) ->
+      it ("Parses: " ++ show input) $ do
+        let tokTreeResult = parseTokTree $ lex input
         case tokTreeResult of
           Right tokTrees -> tokTrees `shouldBe` expected
           Left err -> error $ "unexpected error " ++ show err
