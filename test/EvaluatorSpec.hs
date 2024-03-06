@@ -24,7 +24,7 @@ spec = do
     forM_ cases $ \(input, expected) ->
       it ("Evaluates: " ++ show input) $ do
         let inputExpr = parseTokTree (lex input) >>= parseExpr
-        let evalInput = inputExpr >>= \x -> evalExpr x HM.empty
+        let evalInput = inputExpr >>= \x -> evalExpr x HM.empty HM.empty 1000
         case evalInput of
           Right result -> result `shouldBe` expected
           Left err -> error $ "unexpected error " ++ show err
@@ -47,6 +47,32 @@ spec = do
         let cases = zip pgExprs pg1ExpectedResults
         forM_ cases $ \(input, expected) -> do
           it ("Evaluates: " ++ show input) $ do
-            let result = pgVars >>= \x -> evalExpr input x
+            let result = pgVars >>= \x -> evalExpr input x HM.empty 1000
             toList result `shouldBe` [expected]
       Left err -> error $ "unexpected error " ++ show err
+  describe "Testing Expression Evaluation with functions and varriables" $ do
+    let pg2Input =
+          [ "a := 3"
+          , "b := 2"
+          , "f(x) := 2x"
+          , "g(x) := 2a * x"
+          , "h(x, y) := x^y"
+          , "f(a) + f(b)"
+          , "f(h(a,2) + h(b,2))"
+          , "f(g(b))"
+          , "f(g(b) * f(a))"
+          ]
+    let pg2ExpectedResults = [RL 10, RL 26, RL 24, RL 144]
+    let pg2 = parseProgram pg2Input
+    case pg2 of
+      Right pg -> do
+        let pgExprs = filterExprs $ getProgramStatments pg
+        let pgVars = parseVariables pg
+        let pgFxns = parseFxns pg
+        let cases = zip pgExprs pg2ExpectedResults
+        forM_ cases $ \(input, expected) -> do
+          it ("Evaluates: " ++ show input) $ do
+            let result = pgFxns >>= (\y -> pgVars >>= (\x -> evalExpr input x y 1000)) 
+            toList result `shouldBe` [expected]
+      Left err -> error $ "unexpected error " ++ show err
+    
