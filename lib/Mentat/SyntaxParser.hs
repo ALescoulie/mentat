@@ -8,6 +8,9 @@ import Mentat.Lexer ( lex )
 import Mentat.Tokenizer ( parseTokTree )
 import qualified Data.Map.Strict as HM
 import Data.Maybe ( mapMaybe )
+import Data.Foldable ( toList )
+import Data.List ( intersect )
+
 
 -- | Parses TokTree list into expression
 parseExpr :: [TokTree] -> Either Error Expr
@@ -69,19 +72,19 @@ parseDecl other = Left $ BadDecl other
 -- | Parse Function
 parseFxn :: [TokTree] -> Either Error Statment
 parseFxn [] = Left EmptyExpr
-parseFxn (TLeaf (TId name) : TNode Paren args : TLeaf TAsgn : rest) = do
+parseFxn ((TFxn name args) : TLeaf TAsgn : rest) = do
   fxnArgs <- parseFxnArgs args
   fxnExpr <- parseExpr rest
   Right $ Fxn $ Function name fxnArgs fxnExpr
 parseFxn tokTrees = Left EmptyExpr
 
 
-parseFxnArgs :: [TokTree] -> Either Error [String]
+parseFxnArgs :: [[TokTree]] -> Either Error [String]
 parseFxnArgs [] = Right []
-parseFxnArgs (TLeaf (TId arg) : TLeaf TSep : restToks) = do
+parseFxnArgs ([TLeaf (TId arg)] :  restToks) = do
   restArgs <- parseFxnArgs restToks
   Right $ arg : restArgs
-parseFxnArgs (TLeaf (TId arg) : rest) = if null rest then Right [arg] else Left EmptyExpr -- TODO add error for bad function args
+parseFxnArgs ( [ _ ] : restArgs ) = Left UnfinishedTokenStream -- TODO add function parsing errors
 
 -- | return the statments of a program
 getProgramStatments :: Program -> [Statment]
@@ -94,6 +97,17 @@ filterExprs (Constraint expr: rest) = expr : filterExprs rest
 filterExprs (Declaration _ _: rest) = filterExprs rest
 
 
+getVarNames :: [Statment] -> [String]
+getVarnames [] = []
+getVarNames (Declaration name _ : rest) = name : getVarNames rest
+getVarNames (x : xs) = getVarNames xs
+
+
+getFxnNames :: [Statment] -> [String]
+getFxnNames [] = []
+getFxnNames (Fxn (Function name _ _) : rest) = name : getFxnNames rest
+getFxnNames (_ : xs) = getFxnNames xs
+
 -- | parses a list of strings into a program
 parseProgram :: [String] -> Either Error Program
 parseProgram [] = Right (Program [])
@@ -105,12 +119,12 @@ parseProgram (s : ss) = do
   let restStatments = getProgramStatments rest
   case maybeDecl of
     Left _ -> do
-      let maybeFunction = parseFxn tokTree
-      case maybeFunction of
-        Left _ -> do
-          expr <- parseExpr tokTree
-          Right $ Program (Constraint expr : restStatments)
-        Right fxn -> Right $ Program (fxn : restStatments)
+     let maybeFunction = parseFxn tokTree
+     case maybeFunction of
+       Left _ -> do
+         expr <- parseExpr tokTree
+         Right $ Program (Constraint expr : restStatments)
+       Right fxn -> Right $ Program (fxn : restStatments)
     Right decl -> Right $ Program (decl : restStatments)
 
 

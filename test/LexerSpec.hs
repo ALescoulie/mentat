@@ -41,14 +41,20 @@ spec = do
     let mulStr = "2x"
     let mulToks = [TNumber 2.0, TOp Mul, TId "x"]
     it ("Parse " ++ show mulStr) $ do lex mulStr `shouldBe` mulToks
-
   describe "Parses full statments" $ do
     let cases =
           [ ("1 <= 2", [TNumber 1, TOp LEq, TNumber 2])
-          , ("1 + (1 + 2)", [TNumber 1, TOp Add, TOpen Paren, TNumber 1, TOp Add, TNumber 2, TClose Paren])
+          , ( "1 + (1 + 2)"
+            , [ TNumber 1
+              , TOp Add
+              , TOpen Paren
+              , TNumber 1
+              , TOp Add
+              , TNumber 2
+              , TClose Paren
+              ])
           , ("true = false", [TTrue, TOp Eql, TFalse])
           , ("y)", [TId "y", TClose Paren])
           ]
     forM_ cases $ \(input, expected) ->
       it ("Parses " ++ show input) $ do lex input `shouldBe` expected
-
