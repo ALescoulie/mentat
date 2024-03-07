@@ -1,6 +1,7 @@
 module EvaluatorSpec where
 
 import Control.Monad (forM_)
+import Data.Foldable (toList)
 import qualified Data.Map.Strict as HM
 import Mentat.Evaluator
 import Mentat.Lexer
@@ -8,7 +9,6 @@ import Mentat.ParseTypes
 import Mentat.SyntaxParser
 import Mentat.Tokenizer (parseTokTree)
 import Prelude hiding (lex)
-import Data.Foldable ( toList )
 import Test.Hspec
 
 spec :: Spec
@@ -72,7 +72,7 @@ spec = do
         let cases = zip pgExprs pg2ExpectedResults
         forM_ cases $ \(input, expected) -> do
           it ("Evaluates: " ++ show input) $ do
-            let result = pgFxns >>= (\y -> pgVars >>= (\x -> evalExpr input x y 1000)) 
+            let result =
+                  pgFxns >>= (\y -> pgVars >>= (\x -> evalExpr input x y 1000))
             toList result `shouldBe` [expected]
       Left err -> error $ "unexpected error " ++ show err
-    
