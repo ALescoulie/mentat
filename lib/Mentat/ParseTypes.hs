@@ -58,13 +58,40 @@ data BinOp
   | Mul
   | Div
   | Exp
-  | Eql
+  | And
+  | Or
+  | Xor
+  | Comp CompOp
+  deriving (Show, Eq)
+
+
+data UniOp
+  = Neg
+  | Not
+  | Abs
+  | Sin
+  | Cos
+  | Tan
+  | Sec
+  | Csc
+  | Ctan
+  deriving (Show, Eq)
+
+
+data CompOp
+  = Eql
   | GEq
   | LEq
   | NEq
   | L
   | G
   deriving (Show, Eq)
+
+
+isCompOp :: BinOp -> Bool
+isCompOp (Comp _) = True
+isCompOp _ = False
+
 
 -- | Gives the presidence of BinOp types
 opPresidence :: BinOp -> Int
@@ -73,7 +100,7 @@ opPresidence Sub = 1
 opPresidence Mul = 2
 opPresidence Div = 2
 opPresidence Exp = 3
-opPresidence _ = 0
+opPresidence (Comp _) = 0
 
 -- | Gives left association of BioOp types
 opLeftAssoc :: BinOp -> Bool
@@ -95,6 +122,7 @@ popOp op1 op2
 data Token
   = TNumber Float
   | TOp BinOp
+  | TUOp UniOp
   | TOpen Bracket
   | TClose Bracket
   | TSep
@@ -102,10 +130,7 @@ data Token
   | TTrue
   | TId String
   | TAsgn
-  deriving (Show, Eq)
-
-data Function =
-  Function String [String] Expr
+  | TNeg
   deriving (Show, Eq)
 
 -- | Used as an intermediate step in the parsing process to validate parens and sort them into sub trees
@@ -126,19 +151,7 @@ data Expr
   = LitE Literal
   | VarE String
   | BinOpE BinOp Expr Expr
+  | UniOpE UniOp Expr
   | FxnE String [Expr]
   deriving (Show, Eq)
 
--- | A statement repersents a single line of mentat code which is either a constraint or a decleration
--- | A constraint is an expression that evaluates to a boolean
--- | An assingment assocates a varriable to an ID
-data Statment
-  = Declaration String Expr
-  | Constraint Expr
-  | Fxn Function
-  deriving (Show, Eq)
-
--- | A program is a list of statments
-newtype Program =
-  Program [Statment]
-  deriving (Show, Eq)
