@@ -2,10 +2,10 @@ module SyntaxParserSpec where
 
 import qualified Data.Map.Strict as HM
 import Mentat.ParseTypes
+import Mentat.ParseTypes (Statment(Constraint))
 import Mentat.SyntaxParser
 import Prelude hiding (lex)
 import Test.Hspec
-import Mentat.ParseTypes (Statment(Constraint))
 
 spec :: Spec
 spec = do
@@ -16,10 +16,10 @@ spec = do
             [ Declaration "x" (LitE $ RL 1)
             , Declaration "y" (LitE $ RL 2)
             , Fxn $ Function "f" ["n"] (BinOpE Mul (VarE "n") (LitE $ RL 2))
-            , Constraint (BinOpE Eql (BinOpE Mul (VarE "y") (VarE "x")) (LitE $ RL 2))
+            , Constraint
+                (BinOpE Eql (BinOpE Mul (VarE "y") (VarE "x")) (LitE $ RL 2))
             , Constraint $ FxnE "f" [(BinOpE Mul (VarE "x") (LitE $ RL 2))]
             ]
-
     let maybePg1 = parseProgram pg1
     it ("Parses program: " ++ show pg1) $ do
       case maybePg1 of
@@ -35,4 +35,3 @@ spec = do
                 (_, Nothing) -> error "error: y not found in vars loopup"
                 (Just x, Just y) -> (x, y) `shouldBe` (LitE $ RL 1, LitE $ RL 2)
         Left err -> error $ "Unexepected error " ++ show err
-

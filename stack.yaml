@@ -1,0 +1,13 @@
+resolver: lts-6.4
+packages:
+- '.'
+extra-deps:
+  - haskell-src-exts-1.16.0.1
+  - ref-tf-0.4
+  - reflex-0.4.0
+  - reflex-dom-0.3
+  - hlint-1.9.35
+flags: {}
+extra-package-dbs: []
+compiler: ghcjs-8.10.7
+compiler-check: match

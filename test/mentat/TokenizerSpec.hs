@@ -16,7 +16,7 @@ spec = do
   describe "Parsing simple Token List into TokTrees" $ do
     let inputs =
           [ [TId "x", TOp Add, TId "y"]
-          , [TTrue, TOp Eql, TTrue]
+          , [TTrue, TOp (Comp Eql), TTrue]
           , [TId "x", TAsgn, TNumber 5.0]
           ]
     let results = map (\x -> map (\y -> TLeaf y) x) inputs
@@ -28,7 +28,7 @@ spec = do
           Right tokTrees -> tokTrees `shouldBe` expected
           Left err -> error $ "unexpected error " ++ show err
   describe "Parsing Token list with with parens into sub trees" $ do
-    let inputs = map lex ["o + (w + o)", "n + {y + [a + (a)]}"]
+    let inputs = map lex ["o + (w + o)", "n + {y + [a, a]}"]
     let results =
           [ [ TLeaf $ TId "o"
             , TLeaf $ TOp Add
@@ -40,12 +40,11 @@ spec = do
                 Curl
                 [ TLeaf $ TId "y"
                 , TLeaf $ TOp Add
-                , TNode
-                    Sqr
-                    [ TLeaf $ TId "a"
-                    , TLeaf $ TOp Add
-                    , TNode Paren [TLeaf $ TId "a"]
-                    ]
+                , TContainer 
+                  [
+                    [ TLeaf $ TId "a"],
+                    [ TLeaf $ TId "a"]
+                  ]
                 ]
             ]
           ]
@@ -61,7 +60,7 @@ spec = do
           [ ("f()", [TFxn "f" [[]]])
           , ("f(1, 2)", [TFxn "f" [[TLeaf $ TNumber 1], [TLeaf $ TNumber 2]]])
           , ( "f(n - 1)"
-            , [TFxn "f" [[TLeaf $ TId "n", TLeaf $ TOp Sub, TLeaf $ TNumber 1]]])
+            , [TFxn "f" [[TLeaf $ TId "n", TLeaf $ TNeg, TLeaf $ TNumber 1]]])
           , ( "f(f(n + 1))"
             , [ TFxn
                   "f"
@@ -78,7 +77,7 @@ spec = do
                     , TLeaf $ TOp Mul
                     , TNode
                         Paren
-                        [TLeaf $ TId "n", TLeaf $ TOp Sub, TLeaf $ TNumber 1]
+                        [TLeaf $ TId "n", TLeaf $ TNeg, TLeaf $ TNumber 1]
                     ]
                   ]
               ])
