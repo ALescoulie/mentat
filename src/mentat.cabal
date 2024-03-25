@@ -64,8 +64,15 @@ library
         Mentat.ParseTypes
         Mentat.Lexer
         Mentat.Tokenizer
-        Mentat.SyntaxParser
+        Mentat.DeclarationParser
+        Mentat.ExpressionParser
+        Mentat.ConstraintParser
+        Mentat.Program
+        Mentat.ProgramTypes
         Mentat.Evaluator
+        Mentat.Validator
+        Mentat.FunctionBuilder
+        
 
     -- Modules included in this library but not exported.
     -- other-modules:
@@ -75,13 +82,15 @@ library
 
     -- Other library packages from which modules are imported.
     build-depends:
-        base >=4.17.2.1 && < 5,
+        base >=4.17 && < 5,
         containers,
+        text,
+        aeson,
         split
                       
 
     -- Directories containing source files.
-    hs-source-dirs:   lib
+    hs-source-dirs:   ./lib/
 
     -- Base language which the package is written in.
     default-language: Haskell2010
@@ -103,16 +112,28 @@ test-suite spec
     type:             exitcode-stdio-1.0
 
     -- Directories containing source files.
-    hs-source-dirs:   test
+    hs-source-dirs:   ./../test/mentat
 
     -- The entrypoint to the test suite.
     main-is:          Spec.hs
 
     -- Test dependencies.
     build-depends:
-        base ^>=4.17.2.1 && <5,
+        base ^>=4.17.2.1,
         Mentat,
         hspec==2.*,
-        containers
+        containers,
+        text,
+        aeson
     build-tool-depends: hspec-discover:hspec-discover == 2.*
 
+executable MentatInterface
+    hs-source-dirs:     ../src/mentat-wasm/src
+    ghc-options:        -no-hs-main -c -stubdir stub
+    main-is:            MentatInterface.hs
+    build-depends:      base >4.17 && <5
+                    ,   Mentat
+                    ,   text
+                    ,   aeson
+
+    default-language:   Haskell2010

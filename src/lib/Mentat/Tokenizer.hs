@@ -32,6 +32,10 @@ parseInner (TId name:TOpen Paren:cRest) stack = do
     Left _ -> do
       (restTokens, rest) <- parseInner (TOpen Paren : cRest) stack
       pure (restTokens, TLeaf (TId name) : rest)
+parseInner (TOpen Sqr : xs) stack = do
+  (tokAfterArr, tCon) <- parseArray (TOpen Sqr : xs)
+  (restToks, rest) <- parseInner tokAfterArr stack
+  pure (restToks, tCon : rest)
 parseInner (TOpen x:xs) stack
   -- don't need cases since errors are infective
  = do
@@ -50,3 +54,14 @@ parseFxnCall (TId name:TOpen Paren:call) = do
   let args = splitOn [TLeaf TSep] argToks
   Right (rest, TFxn name args)
 parseFxnCall _ = Left UnfinishedTokenStream -- add an error
+
+
+parseArray :: [Token] -> Either Error ([Token], TokTree)
+parseArray (TOpen Sqr : TClose Sqr : rest) = Right (rest, TContainer [[]])
+parseArray (TOpen Sqr : rest) = do
+  (restAfter, innerToks) <- parseInner rest [Sqr]
+  let items = splitOn [TLeaf TSep] innerToks
+  Right (restAfter, TContainer items)
+parseArray _ = Left UnfinishedTokenStream -- add an error for array parsing
+
+

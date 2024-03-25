@@ -133,11 +133,41 @@ data Token
   | TNeg
   deriving (Show, Eq)
 
+
+data MentatNumericType
+  = I32
+  | I64
+  | F32
+  | F64
+  | U32
+  | U46
+  | Num
+  deriving (Show, Eq)
+
+
+data MentatPrimativeTypes
+  = Numerical MentatNumericType
+  | Boolean
+  | None
+  deriving (Show, Eq)
+
+data MentatTypes
+  = MentatPrimativeTypes
+  | ConType
+  | Any
+  deriving (Show, Eq)
+
+data ConType
+  = ArrayNdim Integer MentatTypes 
+  | SetNdim Integer MentatNumericType
+  deriving (Show, Eq)
+
 -- | Used as an intermediate step in the parsing process to validate parens and sort them into sub trees
 data TokTree
   = TLeaf Token
   | TNode Bracket [TokTree]
   | TFxn String [[TokTree]]
+  | TContainer [[TokTree]]
   deriving (Show, Eq)
 
 -- | Literal values of float or boolean
@@ -146,9 +176,20 @@ data Literal
   | RL Float
   deriving (Show, Eq)
 
+data ConElem
+  = ConItem Expr
+  | ConInner [ConElem]
+  deriving (Show, Eq)
+
+data Container
+  = MtArray ConType [ConElem]
+  | MtSet ConType [ConElem]
+  deriving (Show, Eq)
+
 -- | Mentat expressions which evaluate to a liberal. Literals and varriables are leaves and BinOps are nodes
 data Expr
   = LitE Literal
+  | ConE Container
   | VarE String
   | BinOpE BinOp Expr Expr
   | UniOpE UniOp Expr
