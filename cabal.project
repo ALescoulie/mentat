@@ -1,1 +1,2 @@
-packages: ./mentat.cabal
+packages:   ./src/mentat.cabal
+

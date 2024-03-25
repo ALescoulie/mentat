@@ -64,4 +64,3 @@ parseArray (TOpen Sqr : rest) = do
   Right (restAfter, TContainer items)
 parseArray _ = Left UnfinishedTokenStream -- add an error for array parsing
 
-
