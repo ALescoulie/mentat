@@ -1,6 +1,6 @@
 module Mentat.Lexer where
 
-import Mentat.ParseTypes (BinOp(..), CompOp(..), Bracket(..), Token(..), UniOp(..))
+import Mentat.ParseTypes (BinOp(..), CompOp(..), Bracket(..), Token(..), UniOp(..), Error (BadToken))
 import Prelude hiding (lex)
 import qualified Data.Map.Strict as HM
 import Data.Maybe (isJust, fromMaybe)
@@ -21,6 +21,7 @@ lex (']':cs) = TClose Sqr : lex cs
 lex ('{':cs) = TOpen Curl : lex cs
 lex ('}':cs) = TClose Curl : lex cs
 lex (',':cs) = TSep : lex cs
+lex (';':cs) = TSemi : lex cs
 lex ('=':cs) = (TOp $ Comp Eql) : lex cs
 lex ('<':'=':cs) = (TOp $ Comp LEq) : lex cs
 lex ('>':'=':cs) = (TOp $ Comp GEq) : lex cs
@@ -58,9 +59,7 @@ isSeperator ('[':_) = True
 isSeperator (']':_) = True
 isSeperator ('{':_) = True
 isSeperator ('}':_) = True
-isSeperator (',':_) = True
 isSeperator (';':_) = True
-isSeperator ('-':_) = True
 isSeperator ('!':_) = True
 isSeperator ('>':_) = True
 isSeperator ('<':_) = True
@@ -157,4 +156,4 @@ lexMultiCharToken s = do
             Just (token, rest)
           else
             Nothing
-  
+

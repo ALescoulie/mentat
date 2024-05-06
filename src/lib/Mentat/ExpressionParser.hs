@@ -109,9 +109,13 @@ shuntingYard [] exprs ops
         of
     True -> Right $ head mergedExprs -- if no extras return expr
     False -> Left EmptyExpr -- if there are extras throw error
+shuntingYard (TLeaf (TId id) : TArray items : restT) exprs ops = do 
+  container <- parseArr (TArray items)
+  let indexExpr = BinOpE Index (VarE id) (ConE container)
+  shuntingYard restT (indexExpr : exprs) ops
 shuntingYard (toT:restT) exprs ops =
   case toT of
-    TLeaf (TNumber n) -> shuntingYard restT (LitE (RL n) : exprs) ops
+    TLeaf (TNumber n) -> shuntingYard restT (LitE (Numeric (Num n)) : exprs) ops
     TLeaf (TId i) -> shuntingYard restT (VarE i : exprs) ops
     TLeaf (TOp op) -> do
       (mergedExprs, mergedOps) <- combineExprs exprs ops $ Just op
@@ -126,9 +130,9 @@ shuntingYard (toT:restT) exprs ops =
     TLeaf (TUOp uop) -> do
       case restT of
         (TLeaf (TNumber n): rs) -> do
-          let innerExpr = LitE (RL n)
+          let innerExpr = LitE (Numeric (Num n))
           shuntingYard rs (UniOpE uop innerExpr : exprs) ops
-        (TLeaf (TId id) : rs) -> shuntingYard rs (UniOpE uop (VarE id) : exprs) ops
+        (TLeaf (TId varId) : rs) -> shuntingYard rs (UniOpE uop (VarE varId) : exprs) ops
         (TFxn name args : rs) -> do
           argExprs <- mapM (\x -> shuntingYard x [] []) args
           let fxnCall = FxnE name argExprs
@@ -136,6 +140,14 @@ shuntingYard (toT:restT) exprs ops =
         (TNode _ innerTok : rs) -> do
           innerExpr <- shuntingYard innerTok [] []
           shuntingYard rs (UniOpE uop innerExpr : exprs) ops
+        (TArray items : rs) -> do
+          container <- parseArr (TArray items)
+          shuntingYard rs (UniOpE uop (ConE container) : exprs) ops
+        (TLeaf tok : _) -> Left $ BadToken [tok]
+    TArray items -> do
+      container <- parseArr (TArray items)
+      shuntingYard restT (ConE container : exprs) ops
+
     _ -> Left EmptyExpr
 
 -- | Helper for shuntingYard
@@ -156,7 +168,7 @@ combineExprs exprs [] op =
       case length exprs == 1 -- If op is Nothing, means all tokens are parsed
             of
         True -> Right (exprs, []) -- if tokens are constructed into a single tree return it
-        False -> Left $ BadExpr $ exprs -- if not return error
+        False -> Left $ BadExpr exprs -- if not return error
     Just op -> Right (exprs, [op]) -- if op add to stack and return
 combineExprs (exprR:exprL:rest) (op2:rops) maybeOp =
   case maybeOp -- if there are enought expression on the stack
@@ -170,3 +182,27 @@ combineExprs (exprR:exprL:rest) (op2:rops) maybeOp =
       combineExprs (buildOpExpr op2 exprL exprR : rest) rops Nothing
 combineExprs _ _ _ = Left EmptyExpr
 
+parseArr :: TokTree -> Either Error MtCon
+parseArr (TArray items) = do
+  elems <- mapM (parseExpr >=> parseConElem) items
+  case elems of
+    (i:rs) -> case foldl (&&) True $ map (\x -> checkArrElem i x) rs of
+      True -> case i of
+        (ConItem _) -> Right $ MtArray UnkPrim 1 (i:rs) (length elems)
+        (ConInner (MtArray _ dim _ _)) -> Right $ MtArray UnkPrim (dim + 1) (elems) (length elems)
+        (ConInner (MtSet t dim _ _)) -> Right $ MtArray t (dim + 1) (elems) (length elems)
+      False -> Left $ BadDecl [TArray items]
+    [] -> Right $ MtArray UnkPrim 1 [] 0
+parseArr tok = Left $ BadDecl [tok]
+
+
+-- | Given an ConElem it ensures the other ConElem matches
+checkArrElem :: ConElem -> ConElem -> Bool
+checkArrElem (ConItem _) (ConItem _) = True
+checkArrElem (ConInner (MtArray _ dim1 _ _)) (ConInner (MtArray _ dim2 _ _)) = dim1 == dim2
+checkArrElem _ _ = False
+
+
+parseConElem :: Expr -> Either Error ConElem
+parseConElem (ConE container) = Right $ ConInner container
+parseConElem expr = Right $ ConItem expr

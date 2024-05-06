@@ -1,5 +1,9 @@
 module Mentat.ParseTypes where
 
+import GHC.Int
+import GHC.Float
+import GHC.Num (integerFromInt)
+
 -- | Errors for parsing and evaluation process
 data Error
   = GotNegative
@@ -12,10 +16,12 @@ data Error
   | BadDecl [TokTree]
   | BadOp BinOp
   | EmptyExpr
-  | LitBinOpError BinOp Literal Literal
+  | LitBinOpError BinOp MtType MtType
   | ReasignError String
   | DuplicateVars [String]
   | MissingVar String
+  | TypeError String [MtType]
+  | IndexError MtCon MtCon
 
 instance Show Error where
   show GotNegative = "you dumbass you put in a negative"
@@ -40,8 +46,11 @@ instance Show Error where
   show (MissingVar var) =
     "You dumbass you forgot to assign variable.\nvar" ++ show var
   show EmptyExpr = "You dumbass you didn't fill out an expression"
+  show (TypeError name types) = "You dumbass you cant use the " ++ show name ++ " with these types: " ++ show types
   show (DuplicateVars vars) =
     "You dumbass you repeated a variable: " ++ show vars
+  show (IndexError con ind) = "You dumbass you cannot index " ++ show con ++ " with " ++ show ind
+
   show _ = "You dumbass you caused an error"
 
 -- | Brackets avaliable in code
@@ -62,6 +71,7 @@ data BinOp
   | Or
   | Xor
   | Comp CompOp
+  | Index
   deriving (Show, Eq)
 
 
@@ -100,7 +110,9 @@ opPresidence Sub = 1
 opPresidence Mul = 2
 opPresidence Div = 2
 opPresidence Exp = 3
+opPresidence Index = 10000
 opPresidence (Comp _) = 0
+opPresidence _ = 0
 
 -- | Gives left association of BioOp types
 opLeftAssoc :: BinOp -> Bool
@@ -120,12 +132,13 @@ popOp op1 op2
 
 -- | The different types of items in a line of mentat code
 data Token
-  = TNumber Float
+  = TNumber Double
   | TOp BinOp
   | TUOp UniOp
   | TOpen Bracket
   | TClose Bracket
   | TSep
+  | TSemi
   | TFalse
   | TTrue
   | TId String
@@ -134,62 +147,69 @@ data Token
   deriving (Show, Eq)
 
 
-data MentatNumericType
-  = I32
-  | I64
-  | F32
-  | F64
-  | U32
-  | U46
-  | Num
+data MtType
+  = PrimType MtPrim
+  | ConType MtCon
+  | Any MtType
+  deriving (Show, Eq)
+
+data MtNumeric
+  = MtInt Integer
+  | Num Double
   deriving (Show, Eq)
 
 
-data MentatPrimativeTypes
-  = Numerical MentatNumericType
-  | Boolean
+data MtPrim
+  = Numeric MtNumeric
+  | Boolean Bool
   | None
+  | UnkPrim
   deriving (Show, Eq)
 
-data MentatTypes
-  = MentatPrimativeTypes
-  | ConType
-  | Any
+
+
+data MtCon
+  = MtArray MtPrim Int [ConElem] Int
+  | MtSet MtPrim Int [ConElem] Int
   deriving (Show, Eq)
 
-data ConType
-  = ArrayNdim Integer MentatTypes 
-  | SetNdim Integer MentatNumericType
-  deriving (Show, Eq)
+
+class MtConvert a where
+  makeMtType :: a -> MtType 
+
+instance (MtConvert Int) where 
+  makeMtType i = PrimType $ Numeric $ MtInt $ integerFromInt i
+
+instance (MtConvert Double) where 
+  makeMtType d = PrimType $ Numeric $ Num d
+
+instance (MtConvert Bool) where
+  makeMtType b = PrimType $ Boolean b
+
+instance (MtConvert Integer) where
+  makeMtType i = PrimType $ Numeric $ MtInt i
+
 
 -- | Used as an intermediate step in the parsing process to validate parens and sort them into sub trees
 data TokTree
   = TLeaf Token
   | TNode Bracket [TokTree]
   | TFxn String [[TokTree]]
-  | TContainer [[TokTree]]
+  | TArray [[TokTree]]
   deriving (Show, Eq)
 
 -- | Literal values of float or boolean
-data Literal
-  = BoolL Bool
-  | RL Float
-  deriving (Show, Eq)
 
 data ConElem
   = ConItem Expr
-  | ConInner [ConElem]
+  | ConInner MtCon 
   deriving (Show, Eq)
 
-data Container
-  = MtArray ConType [ConElem]
-  | MtSet ConType [ConElem]
-  deriving (Show, Eq)
 
 -- | Mentat expressions which evaluate to a liberal. Literals and varriables are leaves and BinOps are nodes
 data Expr
-  = LitE Literal
-  | ConE Container
+  = LitE MtPrim
+  | ConE MtCon
   | VarE String
   | BinOpE BinOp Expr Expr
   | UniOpE UniOp Expr

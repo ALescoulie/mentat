@@ -54,8 +54,7 @@ parseProgram pg domainVars = do
   let cstrs = map (\(PgCstr cstr) -> cstr) $ filterCstrStats programStats
   let repeatNames = repeatItems $ (HM.keys vars) ++ (HM.keys fxns)
   if null repeatNames
-    then do
-      _ <- validateProgram programStats domainVars
+    then
       Right $ Program domainVars vars fxns cstrs exprs
     else Left $ DuplicateVars repeatNames
 

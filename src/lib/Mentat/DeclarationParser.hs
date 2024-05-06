@@ -20,12 +20,12 @@ parseFxn ((TFxn name args):TLeaf TAsgn:rest) = do
   fxnArgs <- parseFxnArgs args
   fxnExpr <- parseExpr rest
   Right (name, Function name fxnArgs fxnExpr)
-parseFxn tokTrees = Left EmptyExpr
+parseFxn _ = Left EmptyExpr
 
 parseFxnArgs :: [[TokTree]] -> Either Error [String]
 parseFxnArgs [] = Right []
 parseFxnArgs ([TLeaf (TId arg)]:restToks) = do
   restArgs <- parseFxnArgs restToks
   Right $ arg : restArgs
-parseFxnArgs ([_]:restArgs) = Left UnfinishedTokenStream -- TODO add function parsing errors
+parseFxnArgs _ = Left UnfinishedTokenStream -- TODO add function parsing errors
 

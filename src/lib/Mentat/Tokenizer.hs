@@ -57,10 +57,10 @@ parseFxnCall _ = Left UnfinishedTokenStream -- add an error
 
 
 parseArray :: [Token] -> Either Error ([Token], TokTree)
-parseArray (TOpen Sqr : TClose Sqr : rest) = Right (rest, TContainer [[]])
+parseArray (TOpen Sqr : TClose Sqr : rest) = Right (rest, TArray [[]])
 parseArray (TOpen Sqr : rest) = do
   (restAfter, innerToks) <- parseInner rest [Sqr]
   let items = splitOn [TLeaf TSep] innerToks
-  Right (restAfter, TContainer items)
+  Right (restAfter, TArray items)
 parseArray _ = Left UnfinishedTokenStream -- add an error for array parsing
 

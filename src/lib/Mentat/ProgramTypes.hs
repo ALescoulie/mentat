@@ -3,11 +3,6 @@ module Mentat.ProgramTypes where
 import Mentat.ParseTypes 
 import qualified Data.Map.Strict as HM
 
-data EvalType
-  = RealT
-  | BoolT
-  | Any
-  deriving (Show, Eq)
 
 -- | A mentat function
 -- | Takes the name, argument names, and function expression
