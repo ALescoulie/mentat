@@ -24,7 +24,7 @@
         buildInputs = [
           pkgs.haskellPackages.haskell-language-server
           pkgs.haskellPackages.hindent
-          pkgs.ghc
+          pkgs.haskell.compiler.ghc98
           pkgs.cabal-install
           pkgs.stack
           wasm.packages.${pkgs.system}.all_9_8

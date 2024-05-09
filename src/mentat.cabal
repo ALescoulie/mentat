@@ -70,8 +70,6 @@ library
         Mentat.Program
         Mentat.ProgramTypes
         Mentat.Evaluator
-        Mentat.Validator
-        Mentat.FunctionBuilder
         
 
     -- Modules included in this library but not exported.
@@ -82,7 +80,7 @@ library
 
     -- Other library packages from which modules are imported.
     build-depends:
-        base >=4.17 && < 5,
+        base >=4.19 && < 5,
         containers,
         text,
         aeson,
@@ -119,7 +117,7 @@ test-suite spec
 
     -- Test dependencies.
     build-depends:
-        base ^>=4.17.2.1,
+        base >=4.19 && < 5,
         Mentat,
         hspec==2.*,
         containers,
