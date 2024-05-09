@@ -24,7 +24,7 @@ spec = do
           , "3 + a"
           , "(3a)^b"
           ]
-    let pg1ExpectedResults = [RL 5, RL 12, RL 13, RL 6, RL 81]
+    let pg1ExpectedResults = map makeMtType [ 5 :: Int,  12,  13,  6,  81 ]
     let pg1 = parseProgram pg1Input []
     case pg1 of
       Right pg -> do
@@ -51,7 +51,7 @@ spec = do
           , "2 - 1"
           , "-5"
           ]
-    let pg2ExpectedResults = [RL 10, RL 26, RL 24, RL 144, RL 2, RL 1, RL (-5)]
+    let pg2ExpectedResults = map makeMtType [ 10 :: Int,  26,  24,  144,  2,  1,  (-5)]
     let pg2 = parseProgram pg2Input []
     case pg2 of
       Right pg -> do

@@ -11,10 +11,10 @@ spec :: Spec
 spec = do
   describe "Testing whole program parsing" $ do
     let pg1 = ["x := sin 1", "y := 2", "f(n) := 2 * n", "2 = x * y", "f(2x)"]
-    let pg1Func = Function "f" ["n"] (BinOpE Mul (LitE $ RL 2) (VarE "n"))
+    let pg1Func = Function "f" ["n"] (BinOpE Mul (LitE $ makeMtType 2) (VarE "n"))
     let pg1Cstr =
-          Constraint (BinOpE Mul (VarE "y") (VarE "x")) (LitE $ RL 2) Eql
-    let pg1Expr = FxnE "f" [(BinOpE Mul (VarE "x") (LitE $ RL 2))]
+          Constraint (BinOpE Mul (VarE "y") (VarE "x")) (LitE $ makeMtType 2) Eql
+    let pg1Expr = FxnE "f" [(BinOpE Mul (VarE "x") (LitE $ makeMtType 2))]
     let maybePg1 = parseProgram pg1 []
     it ("Parses function: " ++ show pg1Func) $ do
       case maybePg1 of
